@@ -1,4 +1,3 @@
-from operator import le
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,7 +20,7 @@ def calculaAceleracion(m,r):
             a = np.array([0.,0.])     
             for j in range(len(r)):
                 if j!=i:   
-                    a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j]) 
+                    a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
 
             # Añado la aceleración del planeta i al vector de aceleraciones
             aceleracion.append(a)
@@ -52,26 +51,42 @@ def Verlet(t,m,r,v,h):
 
 # Programa principal 
 
-m = np.array([1.,1.])
-r0 = np.array([[0.,0.],[10.,0.]])
-v0 = np.array([[0.,0.],[0.,1.]])
+if __name__=='__main__':
 
-h = 1e-3
-t = 0
-r = r0
-v = v0
+    m = np.array([1e6,1.,1.,1.])
+    r0 = np.array([[0.,0.], [10.,0.], [30.,0.], [-80,-120]])
+    v0 = np.array([[0.,0], [0.,300], [0.,180], [200,200]])
 
-x2Data = [r0[1][0]]
-y2Data = [r0[1][1]]
+    h = 1e-3
+    t = 0
+    r = r0
+    v = v0
 
-while t<200:
+    x1Data = [r0[1][0]]
+    y1Data = [r0[1][1]]
+    x2Data = [r0[2][0]]
+    y2Data = [r0[2][1]]
+    x3Data = [r0[3][0]]
+    y3Data = [r0[3][1]]
 
-    t,r,v = Verlet(t,m,r,v,h)
+    while t<100:
 
-    x2Data.append(r[1][0])
-    y2Data.append(r[1][1])
+        t,r,v = Verlet(t,m,r,v,h)
 
+        x1Data.append(r[1][0])
+        y1Data.append(r[1][1])
+        x2Data.append(r[2][0])
+        y2Data.append(r[2][1])
+        x3Data.append(r[3][0])
+        y3Data.append(r[3][1])
 
-plt.plot(x2Data,y2Data)
-plt.show()
+        
+    plt.plot(x1Data,y1Data)
+    plt.plot(x2Data,y2Data)
+    plt.plot(x3Data,y3Data)
+
+    plt.xlim([-40, 40])
+    plt.ylim([-40, 40])
+
+    plt.show()
 
