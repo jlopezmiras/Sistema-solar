@@ -4,9 +4,43 @@ import matplotlib.pyplot as plt
 # Constantes físicas
 c = 1.496e11 #distancia Tierra-Sol (m)
 
+
+# --------------------------------------------
+#Clase planeta:
+#Crea un objeto planeta con al menos los atributos de masa (mass), posición inicial (pos0)
+#y velocidad inicial (vel0). Otros atributos posibles son el periodo (period), la energía (energy),
+#la excentricidad (excentricity), etc.
+
+class Planeta:
+
+    def __init__(self,mass,pos0,vel0,**kwargs):
+
+        self.mass = mass
+        self.pos0 = pos0
+        self.vel0 = vel0
+        for attr in kwargs.keys():
+            self.__dict__[attr] = kwargs[attr]
+
+
+
+# Lee los datos y devuelve una lista de objetos planeta con los atributos especificados
+
+def leerDatos(nfile):
+    
+    with open(nfile, "r") as f:
+        data = [line.split() for line in f.read().splitlines()]
+
+    r0 = (line[1] for line in data)
+
+    
+
+
+
+
 # Calcula la aceleración utilizando la ley de la gravitacion de Newton
-#   r --> vector de vectores posicion reescalados de cada planeta (9x2)
-#   m --> vector de la masa reescalada de cada planeta (9)
+#   r --> vector de vectores posicion reescalados de cada planeta 
+#   m --> vector de la masa reescalada de cada planeta 
+
 def calculaAceleracion(m,r):
 
     # Miro si los vectores son del mismo tamaño
@@ -17,7 +51,7 @@ def calculaAceleracion(m,r):
         for i in range(len(r)):
 
             # Inicializo a (0,0) el vector aceleración para hacer la sumatoria sobre todos los planetas (j)
-            a = np.array([0.,0.])     
+            a = np.zeros(2)   
             for j in range(len(r)):
                 if j!=i:   
                     a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
@@ -40,6 +74,7 @@ def Verlet(t,m,r,v,h):
 
     # Calculo los nuevos parámetros
     rnew = r + h*v + h**2*a/2
+    rnew[0] = np.zeros(2)
     w = v + h*a/2
     anew = calculaAceleracion(m,rnew)
     vnew = w + h*anew/2
@@ -61,8 +96,8 @@ if __name__=='__main__':
     r = r0
     v = v0
 
-    r1Data = np.array([r0[0]])
-    r2Data = np.array([r0[1]])
+    r1Data = [r0[0]]
+    r2Data = [r0[1]]
 
     while t<100:
 
@@ -71,8 +106,6 @@ if __name__=='__main__':
         r1Data.append(r[0])
         r2Data.append(r[1])
 
-    plt.plot(r1Data[:,0],r1Data[:,1])
-    #plt.plot(x2Data,y2Data)
-    #plt.show()
-
-
+    plt.plot(*zip(*r1Data))
+    plt.plot(*zip(*r2Data))
+    plt.show()
