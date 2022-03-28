@@ -1,68 +1,68 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+
 
 # Constantes físicas
-c = 1.496e11 #distancia Tierra-Sol (m)
-
-
-# --------------------------------------------
-#Clase planeta:
-#Crea un objeto planeta con al menos los atributos de masa (mass), posición inicial (pos0)
-#y velocidad inicial (vel0). Otros atributos posibles son el periodo (period), la energía (energy),
-#la excentricidad (excentricity), etc.
-
-class Planeta:
-
-    def __init__(self,mass,pos0,vel0,**kwargs):
-
-        self.mass = mass
-        self.pos0 = pos0
-        self.vel0 = vel0
-        for attr in kwargs.keys():
-            self.__dict__[attr] = kwargs[attr]
-
+c = 1.496e11 # distancia Tierra-Sol (m)
+G = 6.67e-11 # constante de gravedad (Nm²/kg²)
+Ms = 1.99e30  # masa del Sol (kg)
 
 
 # Lee los datos y devuelve una lista de objetos planeta con los atributos especificados
-
+# Los datos tienen que estar formateados por columnas de la forma nombre, masa, x, y, vx,
+# vy y cada fila es un planeta distinto
 def leerDatos(nfile):
     
     with open(nfile, "r") as f:
         data = [line.split() for line in f.read().splitlines()]
 
-    r0 = (line[1] for line in data)
+    data.pop(0)
 
-    
+    m0,r0,v0 = [],[],[]
+    for linea in data:
+        m0.append(float(linea[1]))
+        r0.append([float(linea[2]),0])
+        v0.append([float(linea[3]),0])
 
+    return m0,r0,v0
+
+
+
+# Función que reescala los valores a unidades de distancia tierra-sol
+# Devuelve los valores rrescalados de todos los argumentos
+def reescalamiento(m,h,tmax,r,v):
+
+    m = m/Ms
+    h = math.sqrt(G*Ms/c**3)*h
+    tmax = math.sqrt(G*Ms/c**3)*tmax
+    r = r/c
+    v = math.sqrt(c/(G*Ms))*v
+
+    return 
 
 
 
 # Calcula la aceleración utilizando la ley de la gravitacion de Newton
 #   r --> vector de vectores posicion reescalados de cada planeta 
 #   m --> vector de la masa reescalada de cada planeta 
-
 def calculaAceleracion(m,r):
-
-    # Miro si los vectores son del mismo tamaño
-    if len(m)==len(r):  
         
-        #Declaro el vector de aceleraciones a devolver
-        aceleracion = []    
-        for i in range(len(r)):
+    #Declaro el vector de aceleraciones a devolver
+    aceleracion = []    
+    for i in range(len(r)):
 
-            # Inicializo a (0,0) el vector aceleración para hacer la sumatoria sobre todos los planetas (j)
-            a = np.zeros(2)   
-            for j in range(len(r)):
-                if j!=i:   
-                    a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
+    # Inicializo la aceleración a aquella que le ejerce el sol 
+    # y hago la sumatoria sobre todos los demás planetas (j)
+        a = -Ms*r[i]/np.linalg.norm(r[i])**3
+        for j in range(len(r)):
+            if j!=i:   
+                a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
 
-            # Añado la aceleración del planeta i al vector de aceleraciones
-            aceleracion.append(a)
+        # Añado la aceleración del planeta i al vector de aceleraciones
+        aceleracion.append(a)
 
-        return np.array(aceleracion)
-    
-    else:
-        return False
+    return np.array(aceleracion)
 
 
 
@@ -74,38 +74,26 @@ def Verlet(t,m,r,v,h):
 
     # Calculo los nuevos parámetros
     rnew = r + h*v + h**2*a/2
-    rnew[0] = np.zeros(2)
     w = v + h*a/2
     anew = calculaAceleracion(m,rnew)
     vnew = w + h*anew/2
     t+=h
 
+
     return t, rnew, vnew
+
 
 
 # Programa principal 
 
 if __name__=='__main__':
 
-    m = np.array([1.,1.])
-    r0 = np.array([[0.,0.],[10.,0.]])
-    v0 = np.array([[0.,-0.08],[0.,0.08]])
+    m0,r0,v0 = leerDatos("datos_iniciales.txt")
+    h, tmax = 1., 100.
+    m,h,tmax,r,v = reescalamiento(np.array(m0),h,tmax,np.array(r0),np.array(v0))
 
-    h = 1e-3
-    t = 0
-    r = r0
-    v = v0
-
-    r1Data = [r0[0]]
-    r2Data = [r0[1]]
-
-    while t<100:
+    while t<tmax:
 
         t,r,v = Verlet(t,m,r,v,h)
+        print(r[2])
 
-        r1Data.append(r[0])
-        r2Data.append(r[1])
-
-    plt.plot(*zip(*r1Data))
-    plt.plot(*zip(*r2Data))
-    plt.show()
