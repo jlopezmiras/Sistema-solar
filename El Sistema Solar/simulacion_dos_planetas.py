@@ -39,7 +39,7 @@ def reescalamiento(m,h,tmax,r,v):
     r = r/c
     v = math.sqrt(c/(G*Ms))*v
 
-    return 
+    return m,h,tmax,r,v
 
 
 
