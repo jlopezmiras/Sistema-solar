@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import timeit
 
 
 # Constantes físicas
@@ -31,15 +32,13 @@ def leerDatos(nfile):
 
 # Función que reescala los valores a unidades de distancia tierra-sol
 # Devuelve los valores rrescalados de todos los argumentos
-def reescalamiento(m,h,tmax,r,v):
+def reescalamiento(m,r,v):
 
     m = m/Ms
-    h = math.sqrt(G*Ms/c**3)*h
-    tmax = math.sqrt(G*Ms/c**3)*tmax
     r = r/c
     v = math.sqrt(c/(G*Ms))*v
 
-    return m,h,tmax,r,v
+    return m,r,v
 
 
 
@@ -95,19 +94,32 @@ if __name__=='__main__':
     fileout = "planets_data.dat"
 
     m0,r0,v0 = leerDatos(filein)
-    h, tmax = 1e3, 1e7
-    m,h,tmax,r,v = reescalamiento(np.array(m0),h,tmax,np.array(r0),np.array(v0))
+    h, tmax = 1e-2, 1e3
+    m,r,v = reescalamiento(np.array(m0),np.array(r0),np.array(v0))
     
     f = open(fileout, "w")
 
     t=0
+
+    contador = 0
+    start = timeit.default_timer()
     while t<tmax:
 
         t,r,v = Verlet(t,m,r,v,h)
 
         print(r)
 
-        np.savetxt(f, r, delimiter=", ")
-        f.write("\n")
+        if contador%100==0:
         
-        
+            np.savetxt(f, r, delimiter=", ")
+            f.write("\n")
+
+        contador+=1
+
+    f.close()
+    
+    # Muestra el tiempo que ha tardado 
+    stop = timeit.default_timer()
+    print('Time: ', stop - start)  
+
+    
