@@ -23,7 +23,7 @@ def leerDatos(nfile):
     for linea in data:
         m0.append(float(linea[1]))
         r0.append([float(linea[2]),0])
-        v0.append([float(linea[3]),0])
+        v0.append([0,float(linea[3])])
 
     return m0,r0,v0
 
@@ -39,7 +39,7 @@ def reescalamiento(m,h,tmax,r,v):
     r = r/c
     v = math.sqrt(c/(G*Ms))*v
 
-    return 
+    return m,h,tmax,r,v
 
 
 
@@ -54,7 +54,7 @@ def calculaAceleracion(m,r):
 
     # Inicializo la aceleración a aquella que le ejerce el sol 
     # y hago la sumatoria sobre todos los demás planetas (j)
-        a = -Ms*r[i]/np.linalg.norm(r[i])**3
+        a = -r[i]/np.linalg.norm(r[i])**3
         for j in range(len(r)):
             if j!=i:   
                 a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
@@ -84,16 +84,30 @@ def Verlet(t,m,r,v,h):
 
 
 
+
+
+
 # Programa principal 
 
 if __name__=='__main__':
 
-    m0,r0,v0 = leerDatos("datos_iniciales.txt")
-    h, tmax = 1., 100.
-    m,h,tmax,r,v = reescalamiento(np.array(m0),h,tmax,np.array(r0),np.array(v0))
+    filein = "datos_iniciales.txt"
+    fileout = "planets_data.dat"
 
+    m0,r0,v0 = leerDatos(filein)
+    h, tmax = 1e3, 1e7
+    m,h,tmax,r,v = reescalamiento(np.array(m0),h,tmax,np.array(r0),np.array(v0))
+    
+    f = open(fileout, "w")
+
+    t=0
     while t<tmax:
 
         t,r,v = Verlet(t,m,r,v,h)
-        print(r[2])
 
+        print(r)
+
+        np.savetxt(f, r, delimiter=", ")
+        f.write("\n")
+        
+        
