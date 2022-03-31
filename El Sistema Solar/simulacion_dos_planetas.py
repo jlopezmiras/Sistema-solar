@@ -46,42 +46,36 @@ def reescalamiento(m,r,v):
 #   r --> vector de vectores posicion reescalados de cada planeta 
 #   m --> vector de la masa reescalada de cada planeta 
 def calculaAceleracion(m,r):
-        
-    #Declaro el vector de aceleraciones a devolver
-    aceleracion = []    
-    for i in range(len(r)):
+    
+    n = len(r)
+    #Declaro el vector de aceleraciones a devolver   
+    for i in range(n):
 
-    # Inicializo la aceleración a aquella que le ejerce el sol 
-    # y hago la sumatoria sobre todos los demás planetas (j)
-        a = -r[i]/np.linalg.norm(r[i])**3
-        for j in range(len(r)):
-            if j!=i:   
-                a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
+        r_i = r[i]
+        # Inicializo la aceleración a aquella que le ejerce el sol 
+        # y hago la sumatoria sobre todos los demás planetas (j)
+        norm = np.linalg.norm(r_i)
+        a = -r_i/(norm*norm*norm)
+        for j in range(n):
+            if j!=i:
+                norm =  np.linalg.norm(r_i-r[j])  
+                a -= m[j]*(r_i-r[j])/(norm*norm*norm)
 
         # Añado la aceleración del planeta i al vector de aceleraciones
-        aceleracion.append(a)
-
-    return np.array(aceleracion)
+        yield a
 
 
 
 # Recibe como parámetros los vectores de posición, velocidad y aceleración de cada partícula y el paso h
-def Verlet(t,m,r,v,h):
+def Verlet(m,r,v,h,a):
     
-    # Calculo la aceleración a partir de las posiciones en t
-    a = calculaAceleracion(m,r)
-
     # Calculo los nuevos parámetros
-    rnew = r + h*v + h**2*a/2
-    w = v + h*a/2
-    anew = calculaAceleracion(m,rnew)
-    vnew = w + h*anew/2
-    t+=h
+    w = v + h*a*0.5
+    r += h*w
+    a = np.array(list(calculaAceleracion(m,r)))
+    v = w + h*a*0.5
 
-
-    return t, rnew, vnew
-
-
+    return r,v,a
 
 
 
@@ -94,32 +88,32 @@ if __name__=='__main__':
     fileout = "planets_data.dat"
 
     m0,r0,v0 = leerDatos(filein)
-    h, tmax = 1e-2, 1e3
+    h, tmax = 1e-2, 2e3
     m,r,v = reescalamiento(np.array(m0),np.array(r0),np.array(v0))
     
     f = open(fileout, "w")
 
     t=0
-
     contador = 0
+
     start = timeit.default_timer()
+    a = np.array(list(calculaAceleracion(m,r)))
     while t<tmax:
 
-        t,r,v = Verlet(t,m,r,v,h)
-
-        print(r)
+        r,v,a = Verlet(m,r,v,h,a)
 
         if contador%100==0:
-        
+            
             np.savetxt(f, r, delimiter=", ")
             f.write("\n")
 
+        t+=h
         contador+=1
 
     f.close()
     
     # Muestra el tiempo que ha tardado 
     stop = timeit.default_timer()
-    print('Time: ', stop - start)  
+    print('Time 2: ', stop - start)
 
-    
+
