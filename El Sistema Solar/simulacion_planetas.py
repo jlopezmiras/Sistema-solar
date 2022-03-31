@@ -1,92 +1,115 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+import timeit
+
 
 # Constantes físicas
-c = 1.496e11 #distancia Tierra-Sol (m)
+c = 1.496e11 # distancia Tierra-Sol (m)
+G = 6.67e-11 # constante de gravedad (Nm²/kg²)
+Ms = 1.99e30  # masa del Sol (kg)
+
+
+# Lee los datos y devuelve una lista de objetos planeta con los atributos especificados
+# Los datos tienen que estar formateados por columnas de la forma nombre, masa, x, y, vx,
+# vy y cada fila es un planeta distinto
+def leerDatos(nfile):
+    
+    with open(nfile, "r") as f:
+        data = [line.split() for line in f.read().splitlines()]
+
+    data.pop(0)
+
+    m0,r0,v0 = [],[],[]
+    for linea in data:
+        m0.append(float(linea[1]))
+        r0.append([float(linea[2]),0])
+        v0.append([0,float(linea[3])])
+
+    return m0,r0,v0
+
+
+
+# Función que reescala los valores a unidades de distancia tierra-sol
+# Devuelve los valores rrescalados de todos los argumentos
+def reescalamiento(m,r,v):
+
+    m = m/Ms
+    r = r/c
+    v = math.sqrt(c/(G*Ms))*v
+
+    return m,r,v
+
 
 # Calcula la aceleración utilizando la ley de la gravitacion de Newton
-#   r --> vector de vectores posicion reescalados de cada planeta (9x2)
-#   m --> vector de la masa reescalada de cada planeta (9)
+#   r --> vector de vectores posicion reescalados de cada planeta 
+#   m --> vector de la masa reescalada de cada planeta 
 def calculaAceleracion(m,r):
-
-    # Miro si los vectores son del mismo tamaño
-    if len(m)==len(r):  
-        
-        #Declaro el vector de aceleraciones a devolver
-        aceleracion = []    
-        for i in range(len(r)):
-
-            # Inicializo a (0,0) el vector aceleración para hacer la sumatoria sobre todos los planetas (j)
-            a = np.array([0.,0.])     
-            for j in range(len(r)):
-                if j!=i:   
-                    a -= m[j]*(r[i]-r[j])/np.linalg.norm(r[i]-r[j])**3
-
-            # Añado la aceleración del planeta i al vector de aceleraciones
-            aceleracion.append(a)
-
-        return np.array(aceleracion)
     
-    else:
-        return False
-
+    n = len(r)
+    #Declaro el vector de aceleraciones a devolver  
+    a = np.empty((n,2))
+    for i in range(n):
+        dist = math.sqrt(r[i,0]*r[i,0] + r[i,1]*r[i,1])
+        a[i,0] = -r[i,0]/(dist*dist*dist)
+        a[i,1] = -r[i,1]/(dist*dist*dist)
+        for j in range(n):
+            if j!=i:
+                r_ij_x = r[i,0]-r[j,0]
+                r_ij_y = r[i,1]-r[j,1]
+                dist = math.sqrt( r_ij_x*r_ij_x + r_ij_y*r_ij_y )
+                a[i,0] -= m[j]*r_ij_x/(dist*dist*dist)
+                a[i,1] -= m[j]*r_ij_y/(dist*dist*dist)
+    return a
 
 
 # Recibe como parámetros los vectores de posición, velocidad y aceleración de cada partícula y el paso h
-def Verlet(t,m,r,v,h):
+def Verlet(m,r,v,h,a):
     
-    # Calculo la aceleración a partir de las posiciones en t
-    a = calculaAceleracion(m,r)
-
     # Calculo los nuevos parámetros
-    rnew = r + h*v + h**2*a/2
-    rnew[0] = np.array([0.,0.])
-    w = v + h*a/2
-    anew = calculaAceleracion(m,rnew)
-    vnew = w + h*anew/2
-    t+=h
+    w = v + 0.5*h*a
+    r += h*w
+    a = calculaAceleracion(m,r)
+    v = w + 0.5*h*a
 
-    return t, rnew, vnew
+    return r,v,a
+
 
 
 # Programa principal 
 
 if __name__=='__main__':
 
-    m = np.array([1e6,1.,1.,1.])
-    r0 = np.array([[0.,0.], [10.,0.], [30.,0.], [-80,-120]])
-    v0 = np.array([[0.,0], [0.,300], [0.,180], [200,200]])
+    filein = "datos_iniciales.txt"
+    fileout = "planets_data.dat"
 
-    h = 1e-3
-    t = 0
-    r = r0
-    v = v0
+    m0,r0,v0 = leerDatos(filein)
+    h, tmax = 1e-2, 2e3
+    m,r,v = reescalamiento(np.array(m0),np.array(r0),np.array(v0))
+    
+    f = open(fileout, "w")
 
-    x1Data = [r0[1][0]]
-    y1Data = [r0[1][1]]
-    x2Data = [r0[2][0]]
-    y2Data = [r0[2][1]]
-    x3Data = [r0[3][0]]
-    y3Data = [r0[3][1]]
+    t=0
+    contador = 0
 
-    while t<100:
+    start = timeit.default_timer()
+    a = calculaAceleracion(m,r)
+    while t<tmax:
 
-        t,r,v = Verlet(t,m,r,v,h)
+        r,v,a = Verlet(m,r,v,h,a)
 
-        x1Data.append(r[1][0])
-        y1Data.append(r[1][1])
-        x2Data.append(r[2][0])
-        y2Data.append(r[2][1])
-        x3Data.append(r[3][0])
-        y3Data.append(r[3][1])
+        if contador%100==0:
+            
+            np.savetxt(f, r, delimiter=", ")
+            f.write("\n")
 
-        
-    plt.plot(x1Data,y1Data)
-    plt.plot(x2Data,y2Data)
-    plt.plot(x3Data,y3Data)
+        t+=h
+        contador+=1
 
-    plt.xlim([-40, 40])
-    plt.ylim([-40, 40])
+    f.close()
+    
+    # Muestra el tiempo que ha tardado 
+    stop = timeit.default_timer()
+    print('Time: ', stop - start)
 
-    plt.show()
 
