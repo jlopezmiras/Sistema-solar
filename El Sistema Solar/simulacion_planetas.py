@@ -76,6 +76,33 @@ def Verlet(m,r,v,h,a):
 
 
 
+# Calcula los periodos
+def calculaPeriodos(frames_data, nplanets, h):
+
+    pos_iniciales = frames_data[0]
+
+    # Resto a todas las posiciones la posición inicial
+    # Así, cada planeta tiene su propio eje de coordenadas y se encuentra en el origen en t=0
+    for row in range(len(frames_data)):
+        for planet in range(nplanets):
+            frames_data[row][planet] -= pos_iniciales[planet]
+
+    contador = np.zeros(nplanets, dtype=int)
+    for i in range(nplanets):
+        y, steps = 0, 0
+        while (y>=0):
+            y = frames_data[steps][i][1]
+            steps+=1
+
+        while(y<=0):
+            y = frames_data[steps][i][1]
+            steps+=1
+
+        contador[i] = steps
+
+    return contador*h
+
+
 # Programa principal 
 
 if __name__=='__main__':

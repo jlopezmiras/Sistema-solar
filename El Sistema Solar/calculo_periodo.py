@@ -48,8 +48,6 @@ def leerDatos(file_in):
 
 
 
-
-
 def calculaPeriodos(frames_data, nplanets, h):
 
     pos_iniciales = frames_data[0]
@@ -76,25 +74,43 @@ def calculaPeriodos(frames_data, nplanets, h):
     return contador*h
 
 
+
+def calculaEnergia(frames_data, nplanets):
+
+    steps = len(frames_data)
+    energia = np.empty((steps, nplanets))
+
+    for i in range(steps):
+        energia[i]
+
+
+
+
 frames_data, nplanets = leerDatos("planets_data_extended.dat")
 
 # Calculamos y eescalamos el periodo
 periodos = math.sqrt(c**3/(G*Ms))/3600/24*calculaPeriodos(frames_data, nplanets,1e-2)
 
-planetas = ["Mercurio", "Venus", "Tierra", "Marte", "Jupiter", "Saturno", "Urano", "Neptuno"]
+planetas = ["Mercurio", "Venus", "Tierra", "Marte ", "Jupiter", "Saturno", "Urano", "Neptuno"]
+planetas = [name.ljust(8," ") for name in planetas]
+
+periodos = np.round(periodos, 4)
 
 periodos_reales = np.array([88, 225, 365, 687, 4333, 10759, 30687, 60190])
 
-dif_periodos = periodos_reales-periodos
+dif_periodos = np.round(periodos_reales-periodos, 4)
 
-dif_rel_periodos = np.abs(dif_periodos)/periodos_reales*100
+dif_rel_periodos = np.round(np.abs(dif_periodos)/periodos_reales*100, 4)
 
-print("Planeta \t Periodo calculado \t Periodo real \t Diferencia \t Diferencia relativa")
-for i in range(nplanets):
-    print(planetas[i], end="\t")
-    print(str(periodos[i]), end="\t")
-    print(str(periodos_reales[i]), end="\t")
-    print(str(dif_periodos[i]), end="\t")
-    print(str(dif_rel_periodos[i]), end="\n")
+
+with open("Periodos.txt", "w") as f:
+    f.write("Planeta \tPeriodo calculado\tPeriodo real\tDiferencia\tDiferencia relativa (%)\n\n")
+    for i in range(nplanets):
+        f.write(planetas[i] + "\t")
+        f.write(str(periodos[i]).ljust(17," ") +"\t")
+        f.write(str(periodos_reales[i]).ljust(12," ") + "\t")
+        f.write(str(dif_periodos[i]).ljust(10," ") + "\t")
+        f.write(str(dif_rel_periodos[i])+"\n")
+
 
 
