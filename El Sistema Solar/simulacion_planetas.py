@@ -77,30 +77,78 @@ def Verlet(m,r,v,h,a):
 
 
 # Calcula los periodos
-def calculaPeriodos(frames_data, nplanets, h):
+def calculaPeriodos(rData, h, file_out=None):
 
-    pos_iniciales = frames_data[0]
+    pos_iniciales = rData[0]
+    nplanets = len(pos_iniciales)
 
     # Resto a todas las posiciones la posición inicial
     # Así, cada planeta tiene su propio eje de coordenadas y se encuentra en el origen en t=0
-    for row in range(len(frames_data)):
+    for row in range(len(rData)):
         for planet in range(nplanets):
-            frames_data[row][planet] -= pos_iniciales[planet]
+            rData[row,planet] -= pos_iniciales[planet]
 
     contador = np.zeros(nplanets, dtype=int)
     for i in range(nplanets):
         y, steps = 0, 0
         while (y>=0):
-            y = frames_data[steps][i][1]
+            y = rData[steps,i,1]
             steps+=1
 
         while(y<=0):
-            y = frames_data[steps][i][1]
+            y = rData[steps,i,1]
             steps+=1
 
         contador[i] = steps
 
-    return contador*h
+    if file_out == None:
+        return contador*h
+    
+
+    # Calculamos y eescalamos el periodo
+    periodos = math.sqrt(c**3/(G*Ms))/3600/24*h*contador
+
+    planetas = ["Mercurio", "Venus", "Tierra", "Marte ", "Jupiter", "Saturno", "Urano", "Neptuno"]
+    planetas = [name.ljust(8," ") for name in planetas]
+
+    periodos = np.round(periodos, 4)
+
+    periodos_reales = np.array([88, 225, 365, 687, 4333, 10759, 30687, 60190])
+
+    dif_periodos = np.round(periodos_reales-periodos, 4)
+
+    dif_rel_periodos = np.round(np.abs(dif_periodos)/periodos_reales*100, 4)
+
+
+    with open(file_out, "w") as f:
+        f.write("Planeta \tPeriodo calculado\tPeriodo real\tDiferencia\tDiferencia relativa (%)\n\n")
+        for i in range(nplanets):
+            f.write(planetas[i] + "\t")
+            f.write(str(periodos[i]).ljust(17," ") +"\t")
+            f.write(str(periodos_reales[i]).ljust(12," ") + "\t")
+            f.write(str(dif_periodos[i]).ljust(10," ") + "\t")
+            f.write(str(dif_rel_periodos[i])+"\n")
+
+    return
+
+
+
+# Calcula las energías
+def calculaEnergia(m, rData, vData):
+
+    steps = len(rData)
+    energia = np.zeros(steps)
+
+    for i in range(steps):
+        for planeta in range(len(m)):
+            vx = vData[i,planeta,0]
+            vy = vData[i,planeta,1]
+            Ec = m[planeta]*(vx*vx + vy*vy)
+
+            energia[i] += Ec
+
+    return energia
+
 
 
 # Programa principal 
@@ -121,9 +169,14 @@ if __name__=='__main__':
 
     start = timeit.default_timer()
     a = calculaAceleracion(m,r)
+    rData = np.array([])
+    vData = np.array([])
     while t<tmax:
 
         r,v,a = Verlet(m,r,v,h,a)
+
+        np.append(rData,r)
+        np.append(vData,v)
 
         if contador%100==0:
             
@@ -138,5 +191,14 @@ if __name__=='__main__':
     # Muestra el tiempo que ha tardado 
     stop = timeit.default_timer()
     print('Time: ', stop - start)
+
+    calculaPeriodos(rData, h, "periodos.txt")
+
+    energia = calculaEnergia(m,rData,vData)
+    t = np.linspace(0,tmax,h)
+
+    plt.plot(t, energia)
+
+    plt.show()
 
 
